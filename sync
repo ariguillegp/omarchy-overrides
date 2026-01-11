@@ -5,17 +5,22 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Config entries: "name:repo_subdir:config_subdir"
+CONFIGS=(
+    "hypr:hypr:hypr"
+    "ghostty:ghostty:ghostty"
+)
+
 echo "Syncing omarchy configs to repo..."
 
-# Sync hyprland configs
-mkdir -p "$SCRIPT_DIR/hypr"
-cp ~/.config/hypr/*.conf "$SCRIPT_DIR/hypr/"
-echo "  - Synced hypr configs"
-
-# Sync ghostty configs
-mkdir -p "$SCRIPT_DIR/ghostty"
-cp ~/.config/ghostty/config ~/.config/ghostty/*.conf "$SCRIPT_DIR/ghostty/" 2>/dev/null || true
-cp -r ~/.config/ghostty/shaders "$SCRIPT_DIR/ghostty/" 2>/dev/null || true
-echo "  - Synced ghostty configs"
+for entry in "${CONFIGS[@]}"; do
+    IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+    
+    if [ -d ~/.config/"$config_subdir" ]; then
+        mkdir -p "$SCRIPT_DIR/$repo_subdir"
+        rsync -a --exclude='*.bak*' ~/.config/"$config_subdir"/ "$SCRIPT_DIR/$repo_subdir"/
+        echo "  - Synced $name"
+    fi
+done
 
 echo "Done! Don't forget to commit and push your changes."

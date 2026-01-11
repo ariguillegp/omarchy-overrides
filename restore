@@ -5,20 +5,23 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Config entries: "name:repo_subdir:config_subdir"
+CONFIGS=(
+    "hypr:hypr:hypr"
+    "ghostty:ghostty:ghostty"
+)
+
 echo "Restoring omarchy overrides..."
 
-# Restore hyprland configs
-if [ -d "$SCRIPT_DIR/hypr" ]; then
-    cp "$SCRIPT_DIR"/hypr/*.conf ~/.config/hypr/
-    echo "  - Restored hypr configs"
-fi
-
-# Restore ghostty configs
-if [ -d "$SCRIPT_DIR/ghostty" ]; then
-    cp "$SCRIPT_DIR"/ghostty/config "$SCRIPT_DIR"/ghostty/*.conf ~/.config/ghostty/ 2>/dev/null || true
-    cp -r "$SCRIPT_DIR"/ghostty/shaders ~/.config/ghostty/ 2>/dev/null || true
-    echo "  - Restored ghostty configs"
-fi
+for entry in "${CONFIGS[@]}"; do
+    IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+    
+    if [ -d "$SCRIPT_DIR/$repo_subdir" ]; then
+        mkdir -p ~/.config/"$config_subdir"
+        cp -r "$SCRIPT_DIR/$repo_subdir"/. ~/.config/"$config_subdir"/
+        echo "  - Restored $name"
+    fi
+done
 
 # Reload hyprland if running
 if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
