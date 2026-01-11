@@ -12,4 +12,10 @@ mkdir -p "$SCRIPT_DIR/hypr"
 cp ~/.config/hypr/*.conf "$SCRIPT_DIR/hypr/"
 echo "  - Synced hypr configs"
 
+# Sync ghostty configs
+mkdir -p "$SCRIPT_DIR/ghostty"
+cp ~/.config/ghostty/config ~/.config/ghostty/*.conf "$SCRIPT_DIR/ghostty/" 2>/dev/null || true
+cp -r ~/.config/ghostty/shaders "$SCRIPT_DIR/ghostty/" 2>/dev/null || true
+echo "  - Synced ghostty configs"
+
 echo "Done! Don't forget to commit and push your changes."

@@ -13,6 +13,13 @@ if [ -d "$SCRIPT_DIR/hypr" ]; then
     echo "  - Restored hypr configs"
 fi
 
+# Restore ghostty configs
+if [ -d "$SCRIPT_DIR/ghostty" ]; then
+    cp "$SCRIPT_DIR"/ghostty/config "$SCRIPT_DIR"/ghostty/*.conf ~/.config/ghostty/ 2>/dev/null || true
+    cp -r "$SCRIPT_DIR"/ghostty/shaders ~/.config/ghostty/ 2>/dev/null || true
+    echo "  - Restored ghostty configs"
+fi
+
 # Reload hyprland if running
 if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
     hyprctl reload
