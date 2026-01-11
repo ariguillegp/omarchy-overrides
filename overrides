@@ -1,0 +1,132 @@
+#!/bin/bash
+#
+# overrides - Manage omarchy config overrides
+#
+# This script helps keep your custom omarchy configs in sync with this repo.
+# Use it to backup your configs to git, or restore them after an omarchy update.
+#
+# Usage:
+#   ./overrides sync      Sync current ~/.config/ files into this repo
+#   ./overrides restore   Restore files from this repo to ~/.config/
+#   ./overrides help      Show this help message
+#
+# After syncing, don't forget to commit and push:
+#   git add -A && git commit -m "Update configs" && git push
+#
+
+set -e
+
+# Get the directory where this script lives (the repo root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ---------------------------------------------------------------------------
+# CONFIG ENTRIES
+# ---------------------------------------------------------------------------
+# Format: "display_name:repo_subdir:config_subdir"
+#
+#   display_name  - Human-readable name shown in output
+#   repo_subdir   - Subdirectory in this repo where config files are stored
+#   config_subdir - Subdirectory under ~/.config/ to sync from/to
+#
+# To add a new config, simply add a new entry to this array.
+# Example: "waybar:waybar:waybar" would handle ~/.config/waybar/ <-> ./waybar/
+# ---------------------------------------------------------------------------
+CONFIGS=(
+    "hypr:hypr:hypr"
+    "ghostty:ghostty:ghostty"
+)
+
+# ---------------------------------------------------------------------------
+# FUNCTIONS
+# ---------------------------------------------------------------------------
+
+show_help() {
+    echo "Usage: ./overrides <command>"
+    echo ""
+    echo "Commands:"
+    echo "  sync      Sync current ~/.config/ files into this repo"
+    echo "  restore   Restore files from this repo to ~/.config/"
+    echo "  help      Show this help message"
+}
+
+do_sync() {
+    echo "Syncing omarchy configs to repo..."
+
+    for entry in "${CONFIGS[@]}"; do
+        # Split the entry by ':' into separate variables
+        IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+
+        # Only sync if the source directory exists
+        if [ -d ~/.config/"$config_subdir" ]; then
+            # Ensure target directory exists in repo
+            mkdir -p "$SCRIPT_DIR/$repo_subdir"
+
+            # Use rsync to copy files:
+            #   -a           : Archive mode (preserves permissions, timestamps, etc.)
+            #   --exclude    : Skip backup files created by omarchy (*.bak*)
+            #   trailing /   : Copy contents, not the directory itself
+            rsync -a --exclude='*.bak*' ~/.config/"$config_subdir"/ "$SCRIPT_DIR/$repo_subdir"/
+
+            echo "  - Synced $name"
+        fi
+    done
+
+    echo "Done! Don't forget to commit and push your changes."
+}
+
+do_restore() {
+    echo "Restoring omarchy overrides..."
+
+    for entry in "${CONFIGS[@]}"; do
+        # Split the entry by ':' into separate variables
+        IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+
+        # Only restore if the source directory exists in the repo
+        if [ -d "$SCRIPT_DIR/$repo_subdir" ]; then
+            # Ensure target directory exists
+            mkdir -p ~/.config/"$config_subdir"
+
+            # Copy all files recursively from repo to config location
+            # The trailing /. ensures we copy contents, not the directory itself
+            cp -r "$SCRIPT_DIR/$repo_subdir"/. ~/.config/"$config_subdir"/
+
+            echo "  - Restored $name"
+        fi
+    done
+
+    # Reload hyprland to apply changes immediately (if it's running)
+    if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
+        hyprctl reload
+        echo "  - Reloaded hyprland"
+    fi
+
+    echo "Done!"
+}
+
+# ---------------------------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------------------------
+
+case "${1:-}" in
+    sync)
+        do_sync
+        ;;
+    restore)
+        do_restore
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    "")
+        echo "Error: No command specified"
+        echo ""
+        show_help
+        exit 1
+        ;;
+    *)
+        echo "Error: Unknown command '$1'"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
