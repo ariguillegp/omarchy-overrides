@@ -1,0 +1,15 @@
+#!/bin/bash
+# Sync current omarchy configs to this repo for version control
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "Syncing omarchy configs to repo..."
+
+# Sync hyprland configs
+mkdir -p "$SCRIPT_DIR/hypr"
+cp ~/.config/hypr/*.conf "$SCRIPT_DIR/hypr/"
+echo "  - Synced hypr configs"
+
+echo "Done! Don't forget to commit and push your changes."

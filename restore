@@ -1,0 +1,22 @@
+#!/bin/bash
+# Restore omarchy overrides from this repo to their config locations
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "Restoring omarchy overrides..."
+
+# Restore hyprland configs
+if [ -d "$SCRIPT_DIR/hypr" ]; then
+    cp "$SCRIPT_DIR"/hypr/*.conf ~/.config/hypr/
+    echo "  - Restored hypr configs"
+fi
+
+# Reload hyprland if running
+if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
+    hyprctl reload
+    echo "  - Reloaded hyprland"
+fi
+
+echo "Done!"
