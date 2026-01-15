@@ -6,7 +6,7 @@ config-file = ?"~/.config/ghostty/shaders.conf"
 # Font
 font-family = "JetBrainsMono Nerd Font"
 font-style = Regular
-font-size = 9
+font-size = 7
 
 # Window
 window-theme = ghostty
