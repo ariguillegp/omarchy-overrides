@@ -6,137 +6,251 @@
 # Use it to backup your configs to git, or restore them after an omarchy update.
 #
 # Usage:
-#   ./overrides sync      Sync current ~/.config/ files into this repo
-#   ./overrides restore   Restore files from this repo to ~/.config/
-#   ./overrides help      Show this help message
+#   ./overrides sync [--dry-run]       Sync current ~/.config/ files into this repo
+#   ./overrides restore [--force] [--dry-run]  Restore files from this repo to ~/.config/
+#   ./overrides help                   Show this help message
 #
 # After syncing, don't forget to commit and push:
 #   git add -A && git commit -m "Update configs" && git push
 #
 
-set -e
+set -euo pipefail
+IFS=$'\n\t'
 
 # Get the directory where this script lives (the repo root)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Repo stores configs under .config/ subdirectory
+REPO_CONFIG_DIR="$SCRIPT_DIR/.config"
+
 # ---------------------------------------------------------------------------
 # CONFIG ENTRIES
 # ---------------------------------------------------------------------------
-# Format: "display_name:repo_path:config_path[:type]"
+# Path relative to ~/.config/ (source) and .config/ in repo (destination)
+# Works for both files and directories.
 #
-#   display_name  - Human-readable name shown in output
-#   repo_path     - Path in this repo (file or directory)
-#   config_path   - Path under ~/.config/ to sync from/to
-#   type          - Optional: "dir" (default) or "file"
-#
-# To add a new config, simply add a new entry to this array.
 # Examples:
-#   "waybar:waybar:waybar"              - ~/.config/waybar/ <-> ./waybar/
-#   "AGENTS.md:AGENTS.md:AGENTS.md:file" - ~/.config/AGENTS.md <-> ./AGENTS.md
+#   "waybar"    - ~/.config/waybar/ <-> .config/waybar/
+#   "AGENTS.md" - ~/.config/AGENTS.md <-> .config/AGENTS.md
 # ---------------------------------------------------------------------------
 CONFIGS=(
-    "agents:agents:agents"
-    "hypr:hypr:hypr"
-    "ghostty:ghostty:ghostty"
-    "AGENTS.md:AGENTS.md:AGENTS.md:file"
+    "agents"
+    "hypr"
+    "ghostty"
+    "AGENTS.md"
 )
+
+# ---------------------------------------------------------------------------
+# GLOBALS
+# ---------------------------------------------------------------------------
+DRY_RUN=false
+FORCE=false
 
 # ---------------------------------------------------------------------------
 # FUNCTIONS
 # ---------------------------------------------------------------------------
 
+die() {
+    echo "Error: $*" >&2
+    exit 1
+}
+
 show_help() {
-    echo "Usage: ./overrides <command>"
+    echo "Usage: ./overrides <command> [options]"
     echo ""
     echo "Commands:"
     echo "  sync      Sync current ~/.config/ files into this repo"
     echo "  restore   Restore files from this repo to ~/.config/"
     echo "  help      Show this help message"
+    echo ""
+    echo "Options:"
+    echo "  --dry-run   Show what would be done without making changes"
+    echo "  --force     Skip confirmation prompt (restore only)"
+}
+
+validate_environment() {
+    # Refuse to run as root
+    if [[ ${EUID:-1000} -eq 0 ]]; then
+        die "This script must not be run as root"
+    fi
+
+    # Validate HOME
+    if [[ -z "${HOME:-}" ]]; then
+        die "\$HOME is not set"
+    fi
+    if [[ ! -d "$HOME" ]]; then
+        die "\$HOME ($HOME) is not a directory"
+    fi
+    if [[ "$HOME" == "/" ]]; then
+        die "\$HOME cannot be /"
+    fi
+}
+
+validate_config_entry() {
+    local entry="$1"
+
+    # Reject empty strings
+    if [[ -z "$entry" ]]; then
+        die "Empty config entry found"
+    fi
+
+    # Reject "."
+    if [[ "$entry" == "." ]]; then
+        die "Config entry cannot be '.'"
+    fi
+
+    # Reject absolute paths
+    if [[ "$entry" == /* ]]; then
+        die "Config entry cannot be an absolute path: $entry"
+    fi
+
+    # Reject entries containing ".."
+    if [[ "$entry" == *..* ]]; then
+        die "Config entry cannot contain '..': $entry"
+    fi
+}
+
+# Shared rsync helper
+# Usage: do_rsync <src> <dest> [--backup <backup_dir>]
+do_rsync() {
+    local src="$1"
+    local dest="$2"
+    local use_backup="${3:-}"
+    local backup_dir="${4:-}"
+
+    local rsync_opts=(-a --safe-links --exclude='*.bak*')
+
+    if [[ "$DRY_RUN" == true ]]; then
+        rsync_opts+=(-n --itemize-changes)
+    fi
+
+    if [[ "$use_backup" == "--backup" && -n "$backup_dir" ]]; then
+        rsync_opts+=(--backup "--backup-dir=$backup_dir")
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+
+    if [[ -d "$src" ]]; then
+        mkdir -p "$dest"
+        rsync "${rsync_opts[@]}" "$src/" "$dest/"
+    else
+        rsync "${rsync_opts[@]}" "$src" "$dest"
+    fi
 }
 
 do_sync() {
     echo "Syncing omarchy configs to repo..."
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "(dry-run mode - no changes will be made)"
+    fi
 
-    for entry in "${CONFIGS[@]}"; do
-        # Split the entry by ':' into separate variables (type defaults to "dir")
-        IFS=':' read -r name repo_path config_path entry_type <<< "$entry"
-        entry_type="${entry_type:-dir}"
+    for path in "${CONFIGS[@]}"; do
+        validate_config_entry "$path"
 
-        if [ "$entry_type" = "file" ]; then
-            # Handle single file
-            if [ -f "$HOME/.config/$config_path" ]; then
-                # Ensure parent directory exists in repo
-                mkdir -p "$(dirname "$SCRIPT_DIR/$repo_path")"
-                rsync -a --exclude='*.bak*' "$HOME/.config/$config_path" "$SCRIPT_DIR/$repo_path"
-                echo "  - Synced $name"
-            fi
-        else
-            # Handle directory
-            if [ -d "$HOME/.config/$config_path" ]; then
-                # Ensure target directory exists in repo
-                mkdir -p "$SCRIPT_DIR/$repo_path"
+        local src="$HOME/.config/$path"
+        local dest="$REPO_CONFIG_DIR/$path"
 
-                # Use rsync to copy files:
-                #   -a           : Archive mode (preserves permissions, timestamps, etc.)
-                #   --exclude    : Skip backup files created by omarchy (*.bak*)
-                #   trailing /   : Copy contents, not the directory itself
-                rsync -a --exclude='*.bak*' "$HOME/.config/$config_path/" "$SCRIPT_DIR/$repo_path/"
-
-                echo "  - Synced $name"
-            fi
+        if [[ -e "$src" ]]; then
+            do_rsync "$src" "$dest"
+            echo "  - Synced $path"
         fi
     done
 
-    echo "Done! Don't forget to commit and push your changes."
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "Dry run complete. No changes were made."
+    else
+        echo "Done! Don't forget to commit and push your changes."
+    fi
 }
 
 do_restore() {
     echo "Restoring omarchy overrides..."
 
-    for entry in "${CONFIGS[@]}"; do
-        # Split the entry by ':' into separate variables (type defaults to "dir")
-        IFS=':' read -r name repo_path config_path entry_type <<< "$entry"
-        entry_type="${entry_type:-dir}"
+    # Confirmation prompt unless --force
+    if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
+        echo ""
+        echo "This will overwrite files in ~/.config/ with files from this repo."
+        echo "A backup will be created in ~/.config/.overrides-backup/"
+        echo ""
+        read -rp "Continue? [y/N] " confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 0
+        fi
+    fi
 
-        if [ "$entry_type" = "file" ]; then
-            # Handle single file
-            if [ -f "$SCRIPT_DIR/$repo_path" ]; then
-                # Ensure parent directory exists
-                mkdir -p "$(dirname "$HOME/.config/$config_path")"
-                rsync -a "$SCRIPT_DIR/$repo_path" "$HOME/.config/$config_path"
-                echo "  - Restored $name"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "(dry-run mode - no changes will be made)"
+    fi
+
+    # Generate backup directory once for the entire restore operation
+    local backup_dir="$HOME/.config/.overrides-backup/$(date +%Y%m%d-%H%M%S)"
+    if [[ "$DRY_RUN" != true ]]; then
+        mkdir -p "$backup_dir"
+    fi
+
+    for path in "${CONFIGS[@]}"; do
+        validate_config_entry "$path"
+
+        local src="$REPO_CONFIG_DIR/$path"
+        local dest="$HOME/.config/$path"
+
+        if [[ -e "$src" ]]; then
+            local path_backup_dir="$backup_dir/$path"
+            if [[ "$DRY_RUN" != true ]]; then
+                mkdir -p "$path_backup_dir"
             fi
-        else
-            # Handle directory
-            if [ -d "$SCRIPT_DIR/$repo_path" ]; then
-                # Ensure target directory exists
-                mkdir -p "$HOME/.config/$config_path"
-
-                rsync -a "$SCRIPT_DIR/$repo_path/" "$HOME/.config/$config_path/"
-
-                echo "  - Restored $name"
-            fi
+            do_rsync "$src" "$dest" --backup "$path_backup_dir"
+            echo "  - Restored $path"
         fi
     done
 
     # Reload hyprland to apply changes immediately (if it's running)
-    if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
-        hyprctl reload
-        echo "  - Reloaded hyprland"
+    if [[ "$DRY_RUN" != true ]]; then
+        if command -v hyprctl &> /dev/null && hyprctl monitors &> /dev/null; then
+            hyprctl reload
+            echo "  - Reloaded hyprland"
+        fi
     fi
 
-    echo "Done!"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "Dry run complete. No changes were made."
+    else
+        echo "Done!"
+    fi
+}
+
+parse_flags() {
+    for arg in "$@"; do
+        case "$arg" in
+            --dry-run)
+                DRY_RUN=true
+                ;;
+            --force)
+                FORCE=true
+                ;;
+            *)
+                die "Unknown option: $arg"
+                ;;
+        esac
+    done
 }
 
 # ---------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------
 
+validate_environment
+
 case "${1:-}" in
     sync)
+        shift || true
+        parse_flags "$@"
         do_sync
         ;;
     restore)
+        shift || true
+        parse_flags "$@"
         do_restore
         ;;
     help|--help|-h)

@@ -12,12 +12,27 @@ Omarchy updates can overwrite files in `~/.config/`. This repo stores custom con
 # After editing configs in ~/.config/ - save them to this repo
 ./overrides sync
 
+# Preview what would be synced (no changes made)
+./overrides sync --dry-run
+
 # After an omarchy update overwrites your configs - restore them
 ./overrides restore
+
+# Restore without confirmation prompt
+./overrides restore --force
+
+# Preview what would be restored (no changes made)
+./overrides restore --dry-run
 
 # Show help
 ./overrides help
 ```
+
+**Safety features:**
+- Restore creates automatic backups in `~/.config/.overrides-backup/`
+- Restore requires confirmation (use `--force` to skip)
+- Refuses to run as root
+- Validates config entries to prevent path traversal
 
 ## Adding New Configs
 
@@ -25,14 +40,12 @@ Edit the `CONFIGS` array in the `overrides` script. The format supports both dir
 
 ```bash
 CONFIGS=(
-    "waybar:waybar:waybar"                 # directory: ~/.config/waybar/ <-> ./waybar/
-    "AGENTS.md:AGENTS.md:AGENTS.md:file"   # file: ~/.config/AGENTS.md <-> ./AGENTS.md
+    "waybar"    # ~/.config/waybar/ <-> .config/waybar/
+    "AGENTS.md" # ~/.config/AGENTS.md <-> .config/AGENTS.md
 )
 ```
 
-Format: `"display_name:repo_path:config_path[:type]"`
-
-- `type` is optional and defaults to `dir`. Use `file` for individual files.
+Path is relative to `~/.config/` (source) and `.config/` in the repo (destination). Works for both files and directories.
 
 Then sync to pull in the new config files:
 
