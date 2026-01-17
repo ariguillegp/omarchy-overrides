@@ -22,18 +22,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---------------------------------------------------------------------------
 # CONFIG ENTRIES
 # ---------------------------------------------------------------------------
-# Format: "display_name:repo_subdir:config_subdir"
+# Format: "display_name:repo_path:config_path[:type]"
 #
 #   display_name  - Human-readable name shown in output
-#   repo_subdir   - Subdirectory in this repo where config files are stored
-#   config_subdir - Subdirectory under ~/.config/ to sync from/to
+#   repo_path     - Path in this repo (file or directory)
+#   config_path   - Path under ~/.config/ to sync from/to
+#   type          - Optional: "dir" (default) or "file"
 #
 # To add a new config, simply add a new entry to this array.
-# Example: "waybar:waybar:waybar" would handle ~/.config/waybar/ <-> ./waybar/
+# Examples:
+#   "waybar:waybar:waybar"              - ~/.config/waybar/ <-> ./waybar/
+#   "AGENTS.md:AGENTS.md:AGENTS.md:file" - ~/.config/AGENTS.md <-> ./AGENTS.md
 # ---------------------------------------------------------------------------
 CONFIGS=(
+    "agents:agents:agents"
     "hypr:hypr:hypr"
     "ghostty:ghostty:ghostty"
+    "AGENTS.md:AGENTS.md:AGENTS.md:file"
 )
 
 # ---------------------------------------------------------------------------
@@ -53,21 +58,32 @@ do_sync() {
     echo "Syncing omarchy configs to repo..."
 
     for entry in "${CONFIGS[@]}"; do
-        # Split the entry by ':' into separate variables
-        IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+        # Split the entry by ':' into separate variables (type defaults to "dir")
+        IFS=':' read -r name repo_path config_path entry_type <<< "$entry"
+        entry_type="${entry_type:-dir}"
 
-        # Only sync if the source directory exists
-        if [ -d ~/.config/"$config_subdir" ]; then
-            # Ensure target directory exists in repo
-            mkdir -p "$SCRIPT_DIR/$repo_subdir"
+        if [ "$entry_type" = "file" ]; then
+            # Handle single file
+            if [ -f "$HOME/.config/$config_path" ]; then
+                # Ensure parent directory exists in repo
+                mkdir -p "$(dirname "$SCRIPT_DIR/$repo_path")"
+                rsync -a --exclude='*.bak*' "$HOME/.config/$config_path" "$SCRIPT_DIR/$repo_path"
+                echo "  - Synced $name"
+            fi
+        else
+            # Handle directory
+            if [ -d "$HOME/.config/$config_path" ]; then
+                # Ensure target directory exists in repo
+                mkdir -p "$SCRIPT_DIR/$repo_path"
 
-            # Use rsync to copy files:
-            #   -a           : Archive mode (preserves permissions, timestamps, etc.)
-            #   --exclude    : Skip backup files created by omarchy (*.bak*)
-            #   trailing /   : Copy contents, not the directory itself
-            rsync -a --exclude='*.bak*' ~/.config/"$config_subdir"/ "$SCRIPT_DIR/$repo_subdir"/
+                # Use rsync to copy files:
+                #   -a           : Archive mode (preserves permissions, timestamps, etc.)
+                #   --exclude    : Skip backup files created by omarchy (*.bak*)
+                #   trailing /   : Copy contents, not the directory itself
+                rsync -a --exclude='*.bak*' "$HOME/.config/$config_path/" "$SCRIPT_DIR/$repo_path/"
 
-            echo "  - Synced $name"
+                echo "  - Synced $name"
+            fi
         fi
     done
 
@@ -78,19 +94,28 @@ do_restore() {
     echo "Restoring omarchy overrides..."
 
     for entry in "${CONFIGS[@]}"; do
-        # Split the entry by ':' into separate variables
-        IFS=':' read -r name repo_subdir config_subdir <<< "$entry"
+        # Split the entry by ':' into separate variables (type defaults to "dir")
+        IFS=':' read -r name repo_path config_path entry_type <<< "$entry"
+        entry_type="${entry_type:-dir}"
 
-        # Only restore if the source directory exists in the repo
-        if [ -d "$SCRIPT_DIR/$repo_subdir" ]; then
-            # Ensure target directory exists
-            mkdir -p ~/.config/"$config_subdir"
+        if [ "$entry_type" = "file" ]; then
+            # Handle single file
+            if [ -f "$SCRIPT_DIR/$repo_path" ]; then
+                # Ensure parent directory exists
+                mkdir -p "$(dirname "$HOME/.config/$config_path")"
+                rsync -a "$SCRIPT_DIR/$repo_path" "$HOME/.config/$config_path"
+                echo "  - Restored $name"
+            fi
+        else
+            # Handle directory
+            if [ -d "$SCRIPT_DIR/$repo_path" ]; then
+                # Ensure target directory exists
+                mkdir -p "$HOME/.config/$config_path"
 
-            # Copy all files recursively from repo to config location
-            # The trailing /. ensures we copy contents, not the directory itself
-            cp -r "$SCRIPT_DIR/$repo_subdir"/. ~/.config/"$config_subdir"/
+                rsync -a "$SCRIPT_DIR/$repo_path/" "$HOME/.config/$config_path/"
 
-            echo "  - Restored $name"
+                echo "  - Restored $name"
+            fi
         fi
     done
 
