@@ -19,37 +19,30 @@ Omarchy updates can overwrite files in `~/.config/`. This repo stores custom con
 ./overrides help
 ```
 
-After syncing, commit and push your changes:
-```bash
-git add -A && git commit -m "Update configs" && git push
-```
-
-## Tracked Configs
-
-| Name | Repo Directory | Config Location |
-|------|----------------|-----------------|
-| hypr | `./hypr/` | `~/.config/hypr/` |
-| ghostty | `./ghostty/` | `~/.config/ghostty/` |
-
 ## Adding New Configs
 
-Edit the `CONFIGS` array in the `overrides` script:
+Edit the `CONFIGS` array in the `overrides` script. The format supports both directories and individual files:
 
 ```bash
 CONFIGS=(
-    "hypr:hypr:hypr"
-    "ghostty:ghostty:ghostty"
-    "waybar:waybar:waybar"  # <- add new entries like this
+    "waybar:waybar:waybar"                 # directory: ~/.config/waybar/ <-> ./waybar/
+    "AGENTS.md:AGENTS.md:AGENTS.md:file"   # file: ~/.config/AGENTS.md <-> ./AGENTS.md
 )
 ```
 
-Format: `"display_name:repo_subdir:config_subdir"`
+Format: `"display_name:repo_path:config_path[:type]"`
+
+- `type` is optional and defaults to `dir`. Use `file` for individual files.
 
 Then sync to pull in the new config files:
+
 ```bash
 ./overrides sync
-git add -A && git commit -m "Add waybar config" && git push
 ```
+
+## Removing Configs
+
+When you remove an entry from the `CONFIGS` array, the corresponding files in this repo are **not automatically deleted**. You must manually remove them with `git rm` if you no longer want to track them.
 
 ## Setup on a New Machine
 
