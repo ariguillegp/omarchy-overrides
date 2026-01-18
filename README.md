@@ -48,6 +48,18 @@ CONFIGS=(
 
 Each absolute path is mirrored under `configs/` in the repo. Restore writes back to the original path.
 
+### Symlink Handling
+
+Symlinks are preserved as symlinks rather than copying their targets:
+
+```bash
+CONFIGS=(
+    "$HOME/.config/opencode/AGENTS.md"   # If this is a symlink → configs/home/user/.config/opencode/AGENTS.md (symlink preserved)
+)
+```
+
+When synced, the symlink itself is stored. On restore, the original symlink is recreated pointing to the same target.
+
 Then sync to pull in the new config files:
 
 ```bash
