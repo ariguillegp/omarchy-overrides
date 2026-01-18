@@ -1,10 +1,10 @@
 # omarchy-overrides
 
-Personal config overrides for [Omarchy](https://omarchy.org/) that persist across system updates.
+Personal config overrides for [Omarchy](https://omarchy.org/) that persist across system updates, stored under `configs/` with mirrored absolute paths.
 
 ## Why?
 
-Omarchy updates can overwrite files in `~/.config/`. This repo stores custom configurations so they can be easily restored after an update.
+Omarchy updates can overwrite files in `~/.config/`. This repo stores custom configurations by mirroring absolute paths under `configs/` so they can be easily restored after an update.
 
 ## Usage
 
@@ -29,23 +29,24 @@ Omarchy updates can overwrite files in `~/.config/`. This repo stores custom con
 ```
 
 **Safety features:**
-- Restore creates automatic backups in `~/.config/.overrides-backup/`
+- Restore creates automatic backups in `~/.config/.overrides-backup/` (mirrored absolute paths)
 - Restore requires confirmation (use `--force` to skip)
 - Refuses to run as root
 - Validates config entries to prevent path traversal
+- Preserves symlinks instead of copying targets
 
 ## Adding New Configs
 
-Edit the `CONFIGS` array in the `overrides` script. The format supports both directories and individual files:
+Edit the `CONFIGS` array in the `overrides` script. The format supports directories, files, and symlinks using absolute paths:
 
 ```bash
 CONFIGS=(
-    "waybar"    # ~/.config/waybar/ <-> .config/waybar/
-    "AGENTS.md" # ~/.config/AGENTS.md <-> .config/AGENTS.md
+    "$HOME/.config/waybar"    # configs/home/user/.config/waybar/
+    "$HOME/.config/AGENTS.md" # configs/home/user/.config/AGENTS.md (symlink preserved)
 )
 ```
 
-Path is relative to `~/.config/` (source) and `.config/` in the repo (destination). Works for both files and directories.
+Each absolute path is mirrored under `configs/` in the repo. Restore writes back to the original absolute path.
 
 Then sync to pull in the new config files:
 
