@@ -27,14 +27,19 @@ If no files are staged, automatically add all modified and new files with `git a
 Run `git diff HEAD` to understand what changes are being committed and search across all the threads/sessions that have done work on the current git branch to make sure you have as much context as possible to craft a useful commit message.
 
 ### Step 5: Detect Multiple Logical Changes
-Analyze the diff to determine if multiple distinct logical changes are present. Consider splitting based on:
+Use `git hunks list` to see all individual hunks with their stable IDs. Analyze hunks to determine if multiple distinct logical changes are present. Consider splitting based on:
 - **Different concerns**: Changes to unrelated parts of the codebase
 - **Different types of changes**: Mixing features, fixes, refactoring, etc.
 - **File patterns**: Changes to different types of files (e.g., source code vs documentation)
 - **Logical grouping**: Changes that would be easier to understand or review separately
 - **Size**: Very large changes that would be clearer if broken down
 
-If multiple distinct changes are detected, suggest breaking the commit into multiple smaller commits.
+If multiple distinct changes are detected, use `git hunks add <hunk-id>` to stage related hunks together for each logical commit. Create separate commits for each logical group:
+
+1. Reset any staged files: `git reset HEAD`
+2. Stage first logical group: `git hunks add 'file:@-line,len+line,len' ...`
+3. Commit with appropriate message
+4. Repeat for remaining hunk groups
 
 ### Step 6: Create Commit Message
 Use conventional commit [specification](https://www.conventionalcommits.org/en/v1.0.0/) format: `<type>: <description>`
@@ -78,3 +83,20 @@ When a single diff contains multiple logical changes:
 2. docs: update documentation
 3. chore: update dependencies
 4. test: add unit tests for new features
+
+### Hunk-Based Splitting Workflow
+```bash
+# List all hunks
+$ git hunks list
+src/auth.go:@-15,4+15,8
+src/auth.go:@-42,3+46,5
+README.md:@-1,5+1,10
+
+# Stage auth-related hunks for first commit
+$ git hunks add 'src/auth.go:@-15,4+15,8' 'src/auth.go:@-42,3+46,5'
+$ git commit -m "feat: add token validation to auth module"
+
+# Stage docs for second commit
+$ git hunks add 'README.md:@-1,5+1,10'
+$ git commit -m "docs: update setup instructions"
+```
