@@ -1,0 +1,1 @@
+/home/aristides/.config/AGENTS.md

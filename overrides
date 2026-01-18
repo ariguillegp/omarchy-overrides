@@ -2,12 +2,14 @@
 #
 # overrides - Manage omarchy config overrides
 #
-# This script helps keep your custom omarchy configs in sync with this repo.
-# Use it to backup your configs to git, or restore them after an omarchy update.
+# Sync and restore configured absolute paths into this repo.
+# Paths are mirrored under ./configs/ and symlinks are preserved.
+# Example: /home/user/.config/AGENTS.md stays a symlink in configs/.
+# Use it to backup your overrides to git, or restore them after an omarchy update.
 #
 # Usage:
-#   ./overrides sync [--dry-run]       Sync current ~/.config/ files into this repo
-#   ./overrides restore [--force] [--dry-run]  Restore files from this repo to ~/.config/
+#   ./overrides sync [--dry-run]       Sync configured absolute paths into this repo
+#   ./overrides restore [--force] [--dry-run]  Restore files to their original absolute paths
 #   ./overrides help                   Show this help message
 #
 # After syncing, don't forget to commit and push:
@@ -20,24 +22,25 @@ IFS=$'\n\t'
 # Get the directory where this script lives (the repo root)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Repo stores configs under .config/ subdirectory
-REPO_CONFIG_DIR="$SCRIPT_DIR/.config"
+# Repo stores configs under configs/ subdirectory
+REPO_CONFIG_DIR="$SCRIPT_DIR/configs"
 
 # ---------------------------------------------------------------------------
 # CONFIG ENTRIES
 # ---------------------------------------------------------------------------
-# Path relative to ~/.config/ (source) and .config/ in repo (destination)
-# Works for both files and directories.
+# Absolute paths to sync. Files, directories, and symlinks are supported.
+# Each path is mirrored under ./configs/ in the repo.
 #
 # Examples:
-#   "waybar"    - ~/.config/waybar/ <-> .config/waybar/
-#   "AGENTS.md" - ~/.config/AGENTS.md <-> .config/AGENTS.md
+#   "/home/user/.config/waybar"    - configs/home/user/.config/waybar/
+#   "/home/user/.config/AGENTS.md" - configs/home/user/.config/AGENTS.md
 # ---------------------------------------------------------------------------
 CONFIGS=(
-    "agents"
-    "hypr"
-    "ghostty"
-    "AGENTS.md"
+    "$HOME/.claude/skills"                  # both amp and opencode support cc skills
+    "$HOME/.config/hypr"
+    "$HOME/.config/ghostty"
+    "$HOME/.config/AGENTS.md"               # amp global agents.md
+    "$HOME/.config/opencode/AGENTS.md"      # opencode global agents.md
 )
 
 # ---------------------------------------------------------------------------
@@ -59,13 +62,17 @@ show_help() {
     echo "Usage: ./overrides <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  sync      Sync current ~/.config/ files into this repo"
-    echo "  restore   Restore files from this repo to ~/.config/"
+    echo "  sync      Sync configured absolute paths into this repo"
+    echo "  restore   Restore files to their original absolute paths"
     echo "  help      Show this help message"
     echo ""
     echo "Options:"
     echo "  --dry-run   Show what would be done without making changes"
     echo "  --force     Skip confirmation prompt (restore only)"
+    echo ""
+    echo "Example:"
+    echo "  /home/user/.config/waybar -> configs/home/user/.config/waybar"
+    echo "  /home/user/.config/AGENTS.md -> configs/home/user/.config/AGENTS.md (symlink preserved)"
 }
 
 validate_environment() {
@@ -94,14 +101,14 @@ validate_config_entry() {
         die "Empty config entry found"
     fi
 
+    # Require absolute paths
+    if [[ "$entry" != /* ]]; then
+        die "Config entry must be an absolute path: $entry"
+    fi
+
     # Reject "."
     if [[ "$entry" == "." ]]; then
         die "Config entry cannot be '.'"
-    fi
-
-    # Reject absolute paths
-    if [[ "$entry" == /* ]]; then
-        die "Config entry cannot be an absolute path: $entry"
     fi
 
     # Reject entries containing ".."
@@ -112,13 +119,14 @@ validate_config_entry() {
 
 # Shared rsync helper
 # Usage: do_rsync <src> <dest> [--backup <backup_dir>]
+# Preserves symlinks rather than copying targets.
 do_rsync() {
     local src="$1"
     local dest="$2"
     local use_backup="${3:-}"
     local backup_dir="${4:-}"
 
-    local rsync_opts=(-a --safe-links --exclude='*.bak*')
+    local rsync_opts=(-a --exclude='*.bak*')
 
     if [[ "$DRY_RUN" == true ]]; then
         rsync_opts+=(-n --itemize-changes)
@@ -147,8 +155,8 @@ do_sync() {
     for path in "${CONFIGS[@]}"; do
         validate_config_entry "$path"
 
-        local src="$HOME/.config/$path"
-        local dest="$REPO_CONFIG_DIR/$path"
+        local src="$path"
+        local dest="$REPO_CONFIG_DIR${path}"
 
         if [[ -e "$src" ]]; then
             do_rsync "$src" "$dest"
@@ -169,7 +177,7 @@ do_restore() {
     # Confirmation prompt unless --force
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
         echo ""
-        echo "This will overwrite files in ~/.config/ with files from this repo."
+        echo "This will overwrite files at their original absolute paths with files from this repo."
         echo "A backup will be created in ~/.config/.overrides-backup/"
         echo ""
         read -rp "Continue? [y/N] " confirm
@@ -184,6 +192,7 @@ do_restore() {
     fi
 
     # Generate backup directory once for the entire restore operation
+    # Backups mirror the absolute paths under ~/.config/.overrides-backup/
     local backup_dir="$HOME/.config/.overrides-backup/$(date +%Y%m%d-%H%M%S)"
     if [[ "$DRY_RUN" != true ]]; then
         mkdir -p "$backup_dir"
@@ -192,11 +201,11 @@ do_restore() {
     for path in "${CONFIGS[@]}"; do
         validate_config_entry "$path"
 
-        local src="$REPO_CONFIG_DIR/$path"
-        local dest="$HOME/.config/$path"
+        local src="$REPO_CONFIG_DIR${path}"
+        local dest="$path"
 
         if [[ -e "$src" ]]; then
-            local path_backup_dir="$backup_dir/$path"
+            local path_backup_dir="$backup_dir${path}"
             if [[ "$DRY_RUN" != true ]]; then
                 mkdir -p "$path_backup_dir"
             fi
