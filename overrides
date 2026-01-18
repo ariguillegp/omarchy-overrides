@@ -37,6 +37,7 @@ REPO_CONFIG_DIR="$SCRIPT_DIR/configs"
 # ---------------------------------------------------------------------------
 CONFIGS=(
     "$HOME/.claude/skills"                  # both amp and opencode support cc skills
+    "$HOME/.config/agents/docs"
     "$HOME/.config/hypr"
     "$HOME/.config/ghostty"
     "$HOME/.config/AGENTS.md"               # amp global agents.md
