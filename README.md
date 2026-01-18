@@ -1,15 +1,15 @@
 # omarchy-overrides
 
-Personal config overrides for [Omarchy](https://omarchy.org/) that persist across system updates, stored under `configs/` with mirrored absolute paths.
+Personal config overrides for [Omarchy](https://omarchy.org/) that persist across system updates.
 
 ## Why?
 
-Omarchy updates can overwrite files in `~/.config/`. This repo stores custom configurations by mirroring absolute paths under `configs/` so they can be easily restored after an update.
+Omarchy updates can overwrite configuration files. This repo mirrors any configuration that could potentially be lost or overwritten after an upgrade, storing them under `configs/` so they can be easily restored.
 
 ## Usage
 
 ```bash
-# After editing configs in ~/.config/ - save them to this repo
+# After editing configs (from any path in CONFIGS) - save them to this repo
 ./overrides sync
 
 # Preview what would be synced (no changes made)
@@ -29,7 +29,7 @@ Omarchy updates can overwrite files in `~/.config/`. This repo stores custom con
 ```
 
 **Safety features:**
-- Restore creates automatic backups in `~/.config/.overrides-backup/` (mirrored absolute paths)
+- Restore creates automatic backups before overwriting
 - Restore requires confirmation (use `--force` to skip)
 - Refuses to run as root
 - Validates config entries to prevent path traversal
@@ -41,12 +41,12 @@ Edit the `CONFIGS` array in the `overrides` script. The format supports director
 
 ```bash
 CONFIGS=(
-    "$HOME/.config/waybar"    # configs/home/user/.config/waybar/
-    "$HOME/.config/AGENTS.md" # configs/home/user/.config/AGENTS.md (symlink preserved)
+    "$HOME/.config/waybar"      # configs/home/user/.config/waybar/
+    "$HOME/.claude/skills"      # configs/home/user/.claude/skills/
 )
 ```
 
-Each absolute path is mirrored under `configs/` in the repo. Restore writes back to the original absolute path.
+Each absolute path is mirrored under `configs/` in the repo. Restore writes back to the original path.
 
 Then sync to pull in the new config files:
 
@@ -61,7 +61,6 @@ When you remove an entry from the `CONFIGS` array, the corresponding files in th
 ## Setup on a New Machine
 
 ```bash
-cd ~/.config
 git clone git@github.com:ariguillegp/omarchy-overrides.git
 cd omarchy-overrides
 ./overrides restore
