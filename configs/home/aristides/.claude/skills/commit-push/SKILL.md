@@ -2,7 +2,7 @@
 name: commit-push
 description: Makes git commits, handles merge conflicts and pushes them to the remote repository. Use when working with git commits or when the user mentions git add, commits, push or wants to save its current progress.
 license: MIT
-compatibility: Requires git, pre-commit, gh and access to the Internet.
+compatibility: Requires git, git-hunks, pre-commit, gh and access to the Internet.
 metadata:
   author: ariguillegp
   version: "0.1"
