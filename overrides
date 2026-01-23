@@ -40,6 +40,7 @@ CONFIGS=(
     "$HOME/.config/agents/docs"
     "$HOME/.config/hypr"
     "$HOME/.config/ghostty"
+    "$HOME/.config/amp/settings.json"       # amp global settings
     "$HOME/.config/AGENTS.md"               # amp global agents.md
     "$HOME/.config/opencode/AGENTS.md"      # opencode global agents.md
 )
