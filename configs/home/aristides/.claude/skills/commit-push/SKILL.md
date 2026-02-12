@@ -55,7 +55,7 @@ Types:
 - `chore`: Changes to the build process, tools, etc.
 
 ### Step 7: Push to Remote
-Push commits to origin using `git push`.
+Push commits to origin using `git push`. If the commit failed because there is no upstream branch, then run `git push --set-upstream origin <new_branch>`, you don't need my permissions to do so.
 
 ## Best Practices
 

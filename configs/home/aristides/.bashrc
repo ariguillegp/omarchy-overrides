@@ -12,9 +12,10 @@ source <(kubectl completion bash)
 
 # Make an alias for invoking commands you use constantly
 alias a='amp'
-alias c='claude'
-alias v='nvim'
+alias cc='claude'
 alias oc='opencode'
+alias cx='codex'
+alias v='nvim'
 alias l='ls'
 alias k='kubectl'
 
@@ -23,5 +24,5 @@ export PATH="$HOME/.local/bin:$PATH"
 # Active mise environments automatically
 eval "$(mise activate bash)"
 
-# Launch solo project picker with Ctrl-F
-bind -x '"\C-f": "solo"'
+# Launch rv project picker with Ctrl-F
+bind -x '"\C-f": "rv"'

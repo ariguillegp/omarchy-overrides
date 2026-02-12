@@ -41,3 +41,6 @@ keybind = ctrl+space>r=reload_config
 
 # Tab overview
 keybind = ctrl+space>t=toggle_tab_overview
+
+# Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
+async-backend = epoll

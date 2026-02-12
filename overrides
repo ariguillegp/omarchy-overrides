@@ -37,10 +37,10 @@ REPO_CONFIG_DIR="$SCRIPT_DIR/configs"
 # ---------------------------------------------------------------------------
 CONFIGS=(
     "$HOME/.bashrc"
-    "$HOME/.tmux.conf"
     "$HOME/.claude/skills"                  # both amp and opencode support cc skills
     "$HOME/.config/agents/docs"
     "$HOME/.config/hypr"
+    "$HOME/.config/tmux"
     "$HOME/.config/ghostty"
     "$HOME/.config/amp/settings.json"       # amp global settings
     "$HOME/.config/AGENTS.md"               # amp global agents.md
