@@ -5,6 +5,9 @@ globs:
 
 Follow these Go conventions:
 
+Operations:
+1. Never edit go.mod or any dependency under vendor/ manually. You must always rely on the go CLI to do so. For example to update a dependency you can use `go get -u <module>` and to regenerate the vendored dependencies you can use `go mod vendor`, which almost always must be used in combination with `go mod tidy` to get rid of unused dependencies.
+
 Nomenclature:
 1. Always use camelcase for all identifiers.
 2. Acronyms must be all uppercase unless they are at the beginning of an identifier.

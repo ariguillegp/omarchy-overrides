@@ -2,10 +2,10 @@
 name: create-pr
 description: Creates pull requests using GitHub CLI with conventional commit formatting, draft mode, assignees, and labels.
 license: MIT
-compatibility: Requires gh and access to the Internet.
+compatibility: Requires git, gh and access to the Internet.
 metadata:
   author: ariguillegp
-  version: "0.1"
+  version: "0.2"
 ---
 
 # Create Pull Request
@@ -43,7 +43,7 @@ This guide explains how to create pull requests using the GitHub CLI (gh binary)
 1. Review any relevant documentation within the repo that requires an update after the changes in the current branch so it still reflects the current state of the repo. Common locations for documents could be README.md, CONTRIBUTING.md, ARCHITECTURE.md, docs/*.md, etc. Also check all the AGENTS.md file and update them as conventions and techniques in the repo evolve.
 2. First, prepare your PR description with a concise summary that clearly explains the changes made across all the threads/sessions where work was done in the current branch.
 
-3. Use always the `gh pr create --draft` command to create a new pull request in draft mode:
+3. All new PRs must be created always in draft mode with the `gh pr create --draft` command:
 
    ```bash
    # Basic command structure
@@ -57,8 +57,10 @@ This guide explains how to create pull requests using the GitHub CLI (gh binary)
    gh pr create --draft --title "(scope): Your descriptive title" --body-file body-file.md --base main
    ```
 
-4. Always assign the PRs to my GitHub user.
-5. Always attach labels to the PR that are relevant to the topic at hand. If the labels exist use them, if they don't exit create them.
+4. Never create a PR without `--draft`.
+5. Only the user can manually mark a PR as ready for review.
+6. Always assign the PRs to my GitHub user.
+7. Always attach labels to the PR that are relevant to the topic at hand. If the labels exist use them, if they don't exit create them.
 
 ## Best Practices
 
