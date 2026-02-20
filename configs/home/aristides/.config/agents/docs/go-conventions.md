@@ -31,6 +31,7 @@ Concurrency:
 
 Validations:
 ALWAYS run the following steps after go files are changed to make sure at least the baseline concerns are covered:
-1. Run `go fmt` to apply the standard formatting. 
-2. Run `go vet` to apply common linters.
-3. Run `go test` to make sure at least unit tests are all passing.
+1. Run `go fix` to modernize existing code.
+2. Run `go fmt` to apply the standard formatting.
+3. Run `go vet` to apply common linters.
+4. Run `go test` to make sure at least unit tests are all passing.
