@@ -6,23 +6,24 @@
 source ~/.local/share/omarchy/default/bash/rc
 
 # Add your own exports, aliases, and functions here.
-#
 # shell autocompletion for kubectl commands
 source <(kubectl completion bash)
 
 # Make an alias for invoking commands you use constantly
 alias a='amp'
-alias cc='claude'
-alias oc='opencode'
-alias cx='codex'
+alias c='claude'
+alias o='opencode'
+alias x='codex'
 alias v='nvim'
 alias l='ls'
 alias k='kubectl'
 
+# local path used for custom installations
 export PATH="$HOME/.local/bin:$PATH"
 
-# Active mise environments automatically
-eval "$(mise activate bash)"
+# Added by git-ai installer on Thu Mar  5 06:18:46 PM EST 2026
+export PATH="$HOME/.git-ai/bin:$PATH"
 
 # Launch rv project picker with Ctrl-F
 bind -x '"\C-f": "rv"'
+
