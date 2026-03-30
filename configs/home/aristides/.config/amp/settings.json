@@ -1,5 +1,6 @@
 {
   "amp.dangerouslyAllowAll": true,
   "amp.experimental.codeReviewSkill": true,
-  "amp.experimental.compaction": true
+  "amp.experimental.compaction": true,
+  "amp.agent.deepReasoningEffort": "high"
 }
