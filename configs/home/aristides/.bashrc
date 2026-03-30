@@ -27,3 +27,6 @@ export PATH="$HOME/.git-ai/bin:$PATH"
 # Launch rv project picker with Ctrl-F
 bind -x '"\C-f": "rv"'
 
+
+# Added by git-ai installer on Tue Mar 10 11:47:04 PM EDT 2026
+export PATH="/home/aristides/.git-ai/bin:$PATH"
