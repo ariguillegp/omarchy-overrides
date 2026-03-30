@@ -45,6 +45,7 @@ CONFIGS=(
     "$HOME/.config/amp/settings.json"       # amp global settings
     "$HOME/.config/AGENTS.md"               # amp global agents.md
     "$HOME/.config/opencode/AGENTS.md"      # opencode global agents.md
+    "$HOME/.config/opencode/tui.json"       # opencode tui default configs.
 )
 
 # ---------------------------------------------------------------------------
