@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+echo "Setting up omarchy-overrides..."
+
+if ! command -v rsync >/dev/null 2>&1; then
+    echo "Installing rsync..."
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        apt-get update
+        apt-get install -y --no-install-recommends rsync
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends rsync
+    else
+        echo "Error: installing rsync requires root access or sudo" >&2
+        exit 1
+    fi
+else
+    echo "rsync is already installed."
+fi
+
+echo "Checking repository scripts..."
+command -v bash >/dev/null
+command -v git >/dev/null
+command -v rsync >/dev/null
+bash -n overrides
+./overrides help >/dev/null
+
+echo "Setup complete."
